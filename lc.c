@@ -17,10 +17,6 @@
 
 #define MAXPATHLENGTH 128
 
-// GNU coreutils style, take inspiration from ls
-#define OPEN_ERR "%s: cannot open %s: %s\n"
-#define WRITE_ERR "%s: cannot write %s: %s\n"
-#define ARG_ERR "%s: %s: %s\n"
 
 #include <assert.h> // for assert
 #include <errno.h>  // for errno, strerror
@@ -35,7 +31,11 @@ void print_devices(){
     int n = get_device_list(devices);
     if (n != 0){
         for(int i = 0; i < n; i++){
-            printf("[%s]: %s\n", devices[i]->name, devices[i]->id);
+            printf("[%s]: %s, current lvl: %d\n", 
+                   devices[i]->name,
+                   devices[i]->id,
+                   get_device_brightness(devices[i])
+                  );
         }
     } else
         printf("No devices found\n");
@@ -58,25 +58,6 @@ void help() {
   exit(EXIT_SUCCESS);
 }
 
-/*
- * synopsis: generic file error function
- *
- * err:      the error "type"                   (char *)
- * argv0:    the command name                   (char *)
- * fstr:     the path of file being operated on (char *)
- * errstr:   the operation error                (char *)
- *
- * return:   EXIT_FALURE
- *
- * desc: Takes a predefined error string (containing formatting for three
- * strings), and inserts the arguments argv[0] (should be calling command),
- * fstr (path of file), and errstr (the error, likely from errstring(errno)).
- * Then prints this formatted string to stderr, and exits with EXIT_FAILURE.
- */
-void ferr(char *err, char *argv0, char *fstr, char *errstr) {
-  fprintf(stderr, err, argv0, fstr, errstr);
-  exit(EXIT_FAILURE);
-}
 
 /*
  * synopsis:   generic arguments error function

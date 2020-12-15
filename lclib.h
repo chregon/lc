@@ -6,6 +6,7 @@
 #include <string.h> // for strcat, strcpy
 #include <errno.h>  // for errno, strerror
 #include <dirent.h> // For directory listing
+#include <assert.h> // For assert
 #include <linux/limits.h> // For limits
 #ifndef NAME_MAX
 #define NAME_MAX 255 // For some reason this fails 4 me,
@@ -14,6 +15,10 @@
 
 #define BUILTIN_PATH "/sys/class/backlight"
 #define MAX_DEVICES 12 // Pretty arbitrary, but the struct is like 6 bytes
+// GNU coreutils style, take inspiration from ls
+#define OPEN_ERR "%s: cannot open %s: %s\n"
+#define WRITE_ERR "%s: cannot write %s: %s\n"
+#define ARG_ERR "%s: %s: %s\n"
 
 // This will enable us to use both vcp panels and laptop panels
 typedef enum display_type {
@@ -87,5 +92,24 @@ int get_device_max_brightness(device* dev);
  * return:		The brightness as a raw integer(not percentage)
  */
 int set_device_brightness(device* dev, int brightness);
+
+
+/*
+ * synopsis: generic file error function
+ *
+ * err:      the error "type"                   (char *)
+ * argv0:    the command name                   (char *)
+ * fstr:     the path of file being operated on (char *)
+ * errstr:   the operation error                (char *)
+ *
+ * return:   EXIT_FALURE
+ *
+ * desc: Takes a predefined error string (containing formatting for three
+ * strings), and inserts the arguments argv[0] (should be calling command),
+ * fstr (path of file), and errstr (the error, likely from errstring(errno)).
+ * Then prints this formatted string to stderr, and exits with EXIT_FAILURE.
+ */
+void ferr(char *err, char *argv0, char *fstr, char *errstr);
+
 
 #endif

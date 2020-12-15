@@ -1,4 +1,9 @@
 #include <lclib.h>
+// Eventually, this will be moved from lc.c
+void ferr(char *err, char *argv0, char *fstr, char *errstr) {
+  fprintf(stderr, err, argv0, fstr, errstr);
+  exit(EXIT_FAILURE);
+}
 
 int get_device_list(device** out){
     int n = 0;
@@ -48,8 +53,33 @@ int free_device_list(device** out, int n){
 }
 
 int get_device_brightness(device* device){
+    char* brightpath;
+    int res;
+    switch(device->d_type){
+        case BUILTIN:
+            // Build path
+            brightpath = malloc(PATH_MAX + 1);
+            snprintf(brightpath, 
+                     PATH_MAX, 
+                     BUILTIN_PATH "/%s/brightness",
+                     device->id);
+            // Open file
+            FILE *b_fp = fopen(brightpath, "w");
+            if (b_fp == NULL)
+                ferr(OPEN_ERR, device->name, brightpath, strerror(errno));
+            // Parse file contents
+            fscanf(b_fp, "%d", &res);
 
-    return 0;
+            assert(0 == fclose(b_fp)); // but error handling could be improved
+            break;
+        case DDCDISPLAY:
+            fprintf(stderr, "How did you even get here??\n");
+            char* hcf = malloc(1);
+            hcf[256] = 'X';
+            break;
+    }
+
+    return res;
 }
 int get_device_max_brightness(device* device){
 
