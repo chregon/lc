@@ -86,7 +86,8 @@ void argerr(char *err, char *argv0, char *errmsg, char *more) {
 int main(int argc, char *argv[]) {
   // CHECK INPUT
   if (argc == 2)
-    if (strcmp(argv[1], help))
+    if ((!(strcmp(argv[1], "--help"))) || (!(strcmp(argv[1], "help"))) ||
+        (!(strcmp(argv[1], "-h"))))
       help();
   if (argc != 3)
     argerr(ARG_ERR, argv[0], "not enoguh arguments", "try running help");
