@@ -25,7 +25,7 @@ typedef enum display_type {
     BUILTIN,
     DDCDISPLAY
 } display_type;
-// Hello
+
 typedef struct device {
     char* name; // Display name
     display_type d_type;
