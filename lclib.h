@@ -32,6 +32,7 @@ typedef struct device {
     char* id; // Display ID, used for writing
 } device;
 
+
 /*
  * synopsis:    Gets a list of available devices
  *
@@ -48,6 +49,9 @@ typedef struct device {
  *              afterwards
  */
 int get_device_list(device** out);
+device* get_device_by_name(char* name);
+
+
 /*
  * synopsis:	Frees the device list
  *
@@ -61,6 +65,16 @@ int get_device_list(device** out);
  *              structs
  */     
 int free_device_list(device** out, int n);
+
+/*
+ * synopsis:	Frees a single device struct
+ *
+ * Parameters:
+ * dev:			The device struct			(device*)
+ *
+ * return:		Nothing. Avoid double-frees so malloc won't fail ya doink
+ */
+void free_device(device* dev);
 
 /*
  * synopsis:	Gets the current brightness of a device
@@ -87,7 +101,8 @@ int get_device_max_brightness(device* dev);
  * synopsis:	Sets the current brightness of a device
  *
  * Parameters:
- * dev:			The device			(device*)
+ * dev:			The device			                    (device*)
+ * brightness:	The brightness as a raw integer			(int)
  *
  * return:		The brightness as a raw integer(not percentage)
  */

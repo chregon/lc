@@ -41,30 +41,38 @@ int get_device_list(device** out){
     free(sys_class_backlight);
     return n;
 }
+device* get_device_by_name(char* name){
+    return 0x0;
+}
 
 int free_device_list(device** out, int n){
     for(int i = 0; i < n; i++){
-        // Free the strings
-        free(out[i]->name);
-        free(out[i]->id);
-        free(out[i]);
+        free_device(out[i]);
     }
     return 0;
 }
 
+// I mostly split this up so i could free all but one in a list
+void free_device(device* dev){
+    // Free the strings
+    free(dev->name);
+    free(dev->id);
+    // Free the pointer
+    free(dev);
+}
+
 int get_device_brightness(device* device){
-    char* brightpath;
+    char* brightpath = malloc(PATH_MAX + 1);
     int res;
     switch(device->d_type){
         case BUILTIN:
             // Build path
-            brightpath = malloc(PATH_MAX + 1);
             snprintf(brightpath, 
                      PATH_MAX, 
                      BUILTIN_PATH "/%s/brightness",
                      device->id);
             // Open file
-            FILE *b_fp = fopen(brightpath, "w");
+            FILE *b_fp = fopen(brightpath, "r");
             if (b_fp == NULL)
                 ferr(OPEN_ERR, device->name, brightpath, strerror(errno));
             // Parse file contents
@@ -78,15 +86,65 @@ int get_device_brightness(device* device){
             hcf[256] = 'X';
             break;
     }
+    free(brightpath);
 
     return res;
 }
 int get_device_max_brightness(device* device){
+    char* path = malloc(PATH_MAX + 1);
+    int res;
+    switch(device->d_type){
+        case BUILTIN:
+            // Build path
+            snprintf(path, 
+                     PATH_MAX, 
+                     BUILTIN_PATH "/%s/max_brightness",
+                     device->id);
+            // Open file
+            FILE *b_fp = fopen(path, "r");
+            if (b_fp == NULL)
+                ferr(OPEN_ERR, device->name, path, strerror(errno));
+            // Parse file contents
+            fscanf(b_fp, "%d", &res);
 
-    return 0;
+            assert(0 == fclose(b_fp));
+            break;
+        case DDCDISPLAY:
+            fprintf(stderr, "How did you even get here??\n");
+            char* hcf = malloc(1);
+            hcf[256] = 'X';
+            break;
+    }
+    free(path);
+    return res;
 }
 int set_device_brightness(device* device, int brightness){
+    char* path = malloc(PATH_MAX + 1);
+    int res = 0;
+    switch(device->d_type){
+        case BUILTIN:
+            // Build path
+            snprintf(path, 
+                     PATH_MAX, 
+                     BUILTIN_PATH "/%s/brightness",
+                     device->id);
+            // Open file
+            FILE *b_fp = fopen(path, "w");
+            if (b_fp == NULL)
+                ferr(OPEN_ERR, device->name, path, strerror(errno));
 
-    return 0;
+            // Write new brightness value
+            fprintf(b_fp, "%d", brightness);
+
+            assert(0 == fclose(b_fp));
+            break;
+        case DDCDISPLAY:
+            fprintf(stderr, "How did you even get here??\n");
+            char* hcf = malloc(1);
+            hcf[256] = 'X';
+            break;
+    }
+    free(path);
+    return res;
 }
 

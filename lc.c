@@ -31,10 +31,11 @@ void print_devices(){
     int n = get_device_list(devices);
     if (n != 0){
         for(int i = 0; i < n; i++){
-            printf("[%s]: %s, current lvl: %d\n", 
+            printf("[%s]: \n\t%s\n\tCurrent lvl: %d\n\tMax lvl: %d\n", 
                    devices[i]->name,
                    devices[i]->id,
-                   get_device_brightness(devices[i])
+                   get_device_brightness(devices[i]),
+                   get_device_max_brightness(devices[i])
                   );
         }
     } else
@@ -87,47 +88,28 @@ int main(int argc, char *argv[]) {
         (!(strcmp(argv[1], "-h"))))
       help();
   if (argc != 3)
-    argerr(ARG_ERR, argv[0], "not enoguh arguments", "try running help");
+    argerr(ARG_ERR, argv[0], "not enough arguments", "try running help");
   else if (atoi(argv[2]) == 0 || atoi(argv[2]) > 100)
     argerr(ARG_ERR, argv[0], "invalid brightness [1-100]", argv[2]);
 
-  // INITIALIZE PATH VARS
-  char *pre = "/sys/class/backlight/";
-  char basepath[PATH_MAX] = {0};
-  char maxpath[PATH_MAX] = {0};
-  char brightpath[PATH_MAX] = {0};
-  strcpy(basepath, pre); // This is safe. PRE is of known length
-
-  // VALIDATE USER INPUT LENGTH
-  strncat(basepath, argv[1], PATH_MAX - strlen(pre) - 1);
-  strncat(maxpath, basepath, PATH_MAX - 1);
-  strncat(brightpath, basepath, PATH_MAX - 1);
-
-  // SET PATHS FOR BACKLIGHT FILE I/O
-  strcat(maxpath,
-         "/max_brightness"); // Not really safe, but not exploitable either.
-  strcat(brightpath, "/brightness"); // Will just crash if length exceeds
-
-  // OPEN FILES FOR I/O
-  FILE *m_fp = fopen(maxpath, "r");
-  if (m_fp == NULL)
-    ferr(OPEN_ERR, argv[0], maxpath, strerror(errno));
-
-  FILE *b_fp = fopen(brightpath, "w");
-  if (b_fp == NULL)
-    ferr(OPEN_ERR, argv[0], brightpath, strerror(errno));
+  // TRY TO GET DEVICE
+  device* dev = get_device_by_name(argv[1]);
+  if (dev == NULL){
+    fprintf(stderr, "Device \"%s\" not found\n", argv[1]);
+    return 1;
+  }
 
   // READ MAX BRIGHTNESS
-  int m_b;
-  assert(0 < fscanf(m_fp, "%d", &m_b));
-
+  int m_b = get_device_max_brightness(dev);
   // CALCULATE TARGET BRIGHTNESS AS % OF MAX
-  if (!fprintf(b_fp, "%d", atoi(argv[2]) * (m_b / 100)))
-    ferr(WRITE_ERR, argv[0], brightpath, strerror(errno));
+  // NB: If argv[2] isn't an int, this turns off the screen
+  //     Since this is the provided code, it must be as the author intended
+  //     Git blame == chregon2001
+  //     Yup jeg kalder dig ud b 😘
+  int target = atoi(argv[2]) * (m_b / 100);
 
-  // CLOSE FILES
-  assert(0 == fclose(m_fp)); // These shouldn't really fail
-  assert(0 == fclose(b_fp)); // but error handling could be improved
+  set_device_brightness(dev, target);
 
   return EXIT_SUCCESS;
 }
+// vim: expandtab:ts=2:sw=2
