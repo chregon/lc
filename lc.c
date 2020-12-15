@@ -27,6 +27,7 @@
 #include <stdio.h>  // for printf, etc...
 #include <stdlib.h> // for EXIT_FAILURE, EXIT_SUCCESS, etc...
 #include <string.h> // for strcat, strcpy
+#include <lclib.h>
 
 /*
  * synopsis: prints some help to the user
