@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-O0 -march=native -std=c11 -Wall -Wno-stringop-truncation -I.
+CFLAGS=-Og -g -march=native -std=c11 -Wall -Wno-stringop-truncation -I.
 LIBS = lclib.h
 OBJS = lc.o lclib.o
 MAIN = lc.c
@@ -15,6 +15,7 @@ debug-lc: lc.c
 
 check:
 	echo "check"
+	valgrind --leak-check=full ./lc --help
 
 
 clean:

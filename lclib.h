@@ -5,16 +5,25 @@
 #include <stdlib.h> // for EXIT_FAILURE, EXIT_SUCCESS, etc...
 #include <string.h> // for strcat, strcpy
 #include <errno.h>  // for errno, strerror
+#include <dirent.h> // For directory listing
+#include <linux/limits.h> // For limits
+#ifndef NAME_MAX
+#define NAME_MAX 255 // For some reason this fails 4 me,
+                     // So i hardcode this
+#endif
+
+#define BUILTIN_PATH "/sys/class/backlight"
+#define MAX_DEVICES 12 // Pretty arbitrary, but the struct is like 6 bytes
 
 // This will enable us to use both vcp panels and laptop panels
 typedef enum display_type {
-    LAPTOP,
+    BUILTIN,
     DDCDISPLAY
 } display_type;
 // Hello
 typedef struct device {
     char* name; // Display name
-    display_type isLaptop;
+    display_type d_type;
     char* id; // Display ID, used for writing
 } device;
 

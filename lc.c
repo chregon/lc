@@ -28,6 +28,21 @@
 #include <stdlib.h> // for EXIT_FAILURE, EXIT_SUCCESS, etc...
 #include <string.h> // for strcat, strcpy
 #include <lclib.h>
+#include <linux/limits.h>
+
+void print_devices(){
+    device** devices = calloc(sizeof(device*), MAX_DEVICES);
+    int n = get_device_list(devices);
+    if (n != 0){
+        for(int i = 0; i < n; i++){
+            printf("[%s]: %s\n", devices[i]->name, devices[i]->id);
+        }
+    } else
+        printf("No devices found\n");
+
+    free_device_list(devices, n);
+    free(devices);
+}
 
 /*
  * synopsis: prints some help to the user
@@ -36,10 +51,10 @@
  * TODO documentation, waited because it is not finalized
  * */
 void help() {
-  printf("Usage: lc <device> <brighness>\n");
-  printf("Where brightness is a integer percentage of max(e.g. 1-100)\n");
-  printf("#DEVICES#\n");
-  system("ls /sys/class/backlight/\n");
+  fprintf(stderr, "Usage: lc <device> <brighness>\n");
+  fprintf(stderr, "Where brightness is a integer percentage of max(e.g. 1-100)\n");
+  fprintf(stderr, "#DEVICES#\n");
+  print_devices();
   exit(EXIT_SUCCESS);
 }
 
@@ -97,15 +112,15 @@ int main(int argc, char *argv[]) {
 
   // INITIALIZE PATH VARS
   char *pre = "/sys/class/backlight/";
-  char basepath[MAXPATHLENGTH] = {0};
-  char maxpath[MAXPATHLENGTH] = {0};
-  char brightpath[MAXPATHLENGTH] = {0};
+  char basepath[PATH_MAX] = {0};
+  char maxpath[PATH_MAX] = {0};
+  char brightpath[PATH_MAX] = {0};
   strcpy(basepath, pre); // This is safe. PRE is of known length
 
   // VALIDATE USER INPUT LENGTH
-  strncat(basepath, argv[1], MAXPATHLENGTH - strlen(pre) - 1);
-  strncat(maxpath, basepath, MAXPATHLENGTH - 1);
-  strncat(brightpath, basepath, MAXPATHLENGTH - 1);
+  strncat(basepath, argv[1], PATH_MAX - strlen(pre) - 1);
+  strncat(maxpath, basepath, PATH_MAX - 1);
+  strncat(brightpath, basepath, PATH_MAX - 1);
 
   // SET PATHS FOR BACKLIGHT FILE I/O
   strcat(maxpath,
