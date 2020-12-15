@@ -41,8 +41,18 @@ int get_device_list(device** out){
     free(sys_class_backlight);
     return n;
 }
-device* get_device_by_name(char* name){
-    return 0x0;
+device* get_device_by_id(char* id){
+    device* res = 0x0;
+    device* list[MAX_DEVICES];
+    int n = get_device_list(list);
+    for(int i = 0; i < n; i++){
+        if (strcmp(id, list[i]->id) == 0)
+            res = list[i];
+        else
+            free_device(list[i]);
+    }
+
+    return res;
 }
 
 int free_device_list(device** out, int n){

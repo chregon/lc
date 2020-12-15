@@ -49,7 +49,7 @@ typedef struct device {
  *              afterwards
  */
 int get_device_list(device** out);
-device* get_device_by_name(char* name);
+device* get_device_by_id(char* id);
 
 
 /*

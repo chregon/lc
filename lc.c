@@ -93,9 +93,10 @@ int main(int argc, char *argv[]) {
     argerr(ARG_ERR, argv[0], "invalid brightness [1-100]", argv[2]);
 
   // TRY TO GET DEVICE
-  device* dev = get_device_by_name(argv[1]);
+  device* dev = get_device_by_id(argv[1]);
   if (dev == NULL){
-    fprintf(stderr, "Device \"%s\" not found\n", argv[1]);
+    fprintf(stderr, "Device \"%s\" not found\nValid devices:", argv[1]);
+    print_devices();
     return 1;
   }
 
@@ -109,6 +110,7 @@ int main(int argc, char *argv[]) {
   int target = atoi(argv[2]) * (m_b / 100);
 
   set_device_brightness(dev, target);
+  free_device(dev);
 
   return EXIT_SUCCESS;
 }

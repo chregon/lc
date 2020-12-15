@@ -17,6 +17,10 @@ check:
 	echo "check"
 	valgrind --leak-check=full ./lc --help
 
+suid: lc
+	# I wouldn't use this willy-nilly
+	sudo chown 0:0 ./lc
+	sudo chmod +s ./lc
 
 clean:
 	$(RM) lc
