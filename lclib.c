@@ -125,6 +125,7 @@ int set_device_brightness(device *device, int brightness) {
   case BUILTIN:
     // Build path
     snprintf(path, PATH_MAX, BUILTIN_PATH "/%s/brightness", device->id);
+    printf("setting %s %d", path, brightness);
     // Open file
     FILE *b_fp = fopen(path, "w");
     if (b_fp == NULL)
@@ -133,7 +134,7 @@ int set_device_brightness(device *device, int brightness) {
     // Write new brightness value
     fprintf(b_fp, "%d", brightness);
 
-    assert(0 == fclose(b_fp));
+    // assert(0 == fclose(b_fp));
     break;
   case DDCDISPLAY:
     fprintf(stderr, "How did you even get here??\n");

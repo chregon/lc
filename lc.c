@@ -123,21 +123,24 @@ int getsize(char *s) {
 // optparse_long... some guy on a perl forum flamed about how
 // this was very bad because standards etc... but if POSIX can't even negative
 // integers, then i cannot POSIX
-int steal_minus(char *optarg, int prefix) {
+int steal_minus(char *optarg, int prefix) { // HACK
+  // TODO refactor
   int s = getsize(optarg);
-  int res = prefix;
+  double res = prefix;
   for (int i = 0; i < getsize(optarg); i++) {
     char t = optarg[i];
     double d = atoi(&t);
     double di = i;
-    printf("%f pow: %f\n", pow(10, di), 1 / pow(10, di));
+    // shifts numbers to position - (di+1)
     res += d * (1 / pow(10, di + 1));
   }
-  return res;
+  // Aligns to origin
+  res = res * pow(10, s);
+  return floor(res);
 }
 
 // For -0..-9 args
-double neg_num_arg_prefix = -1000;
+int neg_num_arg_prefix = -1000;
 
 int main(int argc, char *argv[]) {
   // GET ARGS
@@ -197,44 +200,45 @@ int main(int argc, char *argv[]) {
       break;
 
     case '1':
-      neg_num_arg_prefix = 1;
-      int s = getsize(optarg);
-      for (int i = 0; i < getsize(optarg); i++) {
-        char t = optarg[i];
-        double d = atoi(&t);
-        double di = i;
-        printf("%f pow: %f\n", pow(10, di), 1 / pow(10, di));
-        neg_num_arg_prefix += d * (1 / pow(10, di + 1));
-      }
-      printf("%f\n", neg_num_arg_prefix * pow(10, s));
+      neg_num_arg_prefix = steal_minus(optarg, 1);
+      /* int s = getsize(optarg); */
+      /* for (int i = 0; i < getsize(optarg); i++) { */
+      /*   char t = optarg[i]; */
+      /*   double d = atoi(&t); */
+      /*   double di = i; */
+      /*   printf("%f pow: %f\n", pow(10, di), 1 / pow(10, di)); */
+      /*   neg_num_arg_prefix += d * (1 / pow(10, di + 1)); */
+      /* } */
+      /* printf("%f\n", neg_num_arg_prefix * pow(10, s)); */
       break; // NOTE this won't be reached
     case '2':
-      neg_num_arg_prefix = 2;
-      break; // NOTE this won't be reached
+      neg_num_arg_prefix = steal_minus(optarg, 2);
+      break;
     case '3':
-      neg_num_arg_prefix = 3;
-      break; // NOTE this won't be reached
+      neg_num_arg_prefix = steal_minus(optarg, 3);
+      break;
     case '4':
-      neg_num_arg_prefix = 4;
-      break; // NOTE this won't be reached
+      neg_num_arg_prefix = steal_minus(optarg, 4);
+      break;
     case '5':
-      neg_num_arg_prefix = 5;
-      break; // NOTE this won't be reached
+      neg_num_arg_prefix = steal_minus(optarg, 5);
+      break;
     case '6':
-      neg_num_arg_prefix = 6;
-      break; // NOTE this won't be reached
+      neg_num_arg_prefix = steal_minus(optarg, 6);
+      break;
     case '7':
-      neg_num_arg_prefix = 7;
-      break; // NOTE this won't be reached
+      neg_num_arg_prefix = steal_minus(optarg, 7);
+      break;
     case '8':
-      neg_num_arg_prefix = 8;
-      break; // NOTE this won't be reached
+      neg_num_arg_prefix = steal_minus(optarg, 8);
+      break;
     case '9':
-      neg_num_arg_prefix = 9;
-      break; // NOTE this won't be reached
+      neg_num_arg_prefix = steal_minus(optarg, 9);
+      break;
     case '0':
-      neg_num_arg_prefix = 0; // well be complete but why would one use 0?
-      break;                  // NOTE this won't be reached
+      neg_num_arg_prefix = steal_minus(optarg, 0);
+      // we'll be complete but why would one use 0?
+      break;
     case 'd':
       print_devices();
       break; // NOTE this won't be reached
@@ -280,8 +284,21 @@ int main(int argc, char *argv[]) {
       brightness = atoi(argv[i]);
   }
 
-  if (NULL == device || 100 < brightness || 1 > brightness)
+  if (NULL == device) {
+    printf("hello");
     help();
+  }
+  // -1000 is a sentinel value
+  if (-1000 == neg_num_arg_prefix || !relative_flag) {
+    if (100 < brightness || 0 > brightness) {
+      help();
+    }
+  } else if (100 >= neg_num_arg_prefix || (-100 <= neg_num_arg_prefix)) {
+    brightness = -neg_num_arg_prefix;
+  } else {
+    printf("hello");
+    help();
+  }
 
   // TRY TO GET DEVICE
   struct device *dev = get_device_by_id(device);
@@ -298,25 +315,21 @@ int main(int argc, char *argv[]) {
   double target;
   // NOTE this was very quick, i hope it works... Didn't feel like getting up
   // and making a sanity check on paper
-  printf("%f\n", relative_flag);
-  printf("%f\n", m_b);
   if (relative_flag) {
-    printf("%d\n", relative_flag);
     target = c_b + (m_b / 100) * brightness;
-    // (m_b/100) in R+, specific (0,m_b]
-    // brightness in [-100,100]
-    // target in (-100, m_b + 100]
-    // so we let f: (-100, m_b + 100] -> (0,m_b)
-    // https://math.stackexchange.com/questions/914823/shift-numbers-into-a-different-range
-    // f: [a,b] -> [c,d]
-    // f(t)=c+((d−c)/(b−a))(t−a)
-    // target = 1 + ((m_b - 1) / (100 + 100)) * (target + 100);
+    printf("%.f + %.f = %.f\n", c_b, brightness, target);
   } else
     target = brightness * (m_b / 100);
 
-  printf("%f", target);
+  printf("%f target\n", target);
+  if (1 > target) {
+    target = 1;
+  } else if (m_b < target) {
+    target = m_b;
+  }
+  printf("%f target\n", target);
 
-  // set_device_brightness(dev, target);
+  set_device_brightness(dev, target);
   free_device(dev);
 
   return EXIT_SUCCESS;
