@@ -1,5 +1,5 @@
 #include <lclib.h>
-// Eventually, this will be moved from lc.c
+// TODO Eventually, this will be moved from lc.c
 void ferr(char *err, char *argv0, char *fstr, char *errstr) {
   fprintf(stderr, err, argv0, fstr, errstr);
   exit(EXIT_FAILURE);
@@ -157,4 +157,3 @@ int set_device_brightness(device* device, int brightness){
     free(path);
     return res;
 }
-
