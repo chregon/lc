@@ -16,6 +16,7 @@
  */
 
 #define MAXPATHLENGTH 128
+#define VERSION "0.3-rc.2"
 
 #include "lclib.h"
 #include <assert.h> // for assert
@@ -26,7 +27,20 @@
 #include <stdlib.h> // for EXIT_FAILURE, EXIT_SUCCESS, etc...
 #include <string.h> // for strcat, strcpy
 
+// TODO if we want it, just an example of a --flag
 static int verbose_flag;
+
+// if set, instead of setting brighness, changes will be relative.
+static int relative_flag;
+
+// tiny help, or just usage string
+static int tiny_help_flag;
+
+// full help flag
+static int help_flag;
+
+// list devices
+static int list_devices_flag;
 
 void print_devices() {
   device **devices = calloc(sizeof(device *), MAX_DEVICES);
@@ -43,6 +57,7 @@ void print_devices() {
 
   free_device_list(devices, n);
   free(devices);
+  exit(EXIT_SUCCESS);
 }
 
 /*
@@ -52,11 +67,25 @@ void print_devices() {
  * TODO documentation, waited because it is not finalized
  * */
 void help() {
-  fprintf(stderr, "Usage: lc <device> <brighness>\n");
-  fprintf(stderr,
-          "Where brightness is a integer percentage of max(e.g. 1-100)\n");
-  fprintf(stderr, "#DEVICES#\n");
-  print_devices();
+  fprintf(stderr, "Usage: lc [-dh] device brighness [-r]\n");
+  exit(EXIT_SUCCESS);
+}
+
+void license_notice() {
+  printf("lc " VERSION " -- Copyright (C) 2020 -- Christian Egon Sørensen\n");
+  printf("This program comes with ABSOLUTELY NO WARRANTY; \n");
+  printf("This is free software, and you are welcome to redistribute it\n");
+  printf("under certain conditions; \n");
+}
+
+void full_help() {
+  fprintf(stderr, "Usage: lc [-dh] DEVICE BRIGHTNESS [-r]\n");
+  fprintf(stderr, "Sets brightness (as percentage) for device file in "
+                  "/sys/class/backlight\n\n");
+  system("cat HELP.txt"); // FIXME this is obviously stupid, should be fixed
+  fprintf(stderr, "\n");
+
+  license_notice();
   exit(EXIT_SUCCESS);
 }
 
@@ -82,6 +111,8 @@ void argerr(char *err, char *argv0, char *errmsg, char *more) {
 }
 
 int main(int argc, char *argv[]) {
+  // GET ARGS
+  // Taken from getopts info pages, getopts_long examples
   int c;
 
   while (1) {
@@ -89,19 +120,25 @@ int main(int argc, char *argv[]) {
         /* These options set a flag. */
         {"verbose", no_argument, &verbose_flag, 1},
         {"brief", no_argument, &verbose_flag, 0},
+        {"list-devices", no_argument, &list_devices_flag, 0},
+        {"help", no_argument, &help_flag, 1},
         /* These options don’t set a flag.
            We distinguish them by their indices. */
-        {"relative", no_argument, 0, 'r'},
+        {"relative", no_argument, &relative_flag, 'r'},
+        {"tiny help", no_argument, &tiny_help_flag, 'h'},
+        {"list devices", no_argument, &list_devices_flag, 'd'},
         /* {"append", no_argument, 0, 'b'}, */
         /* {"delete", required_argument, 0, 'd'}, */
         /* {"create", required_argument, 0, 'c'}, */
         /* {"file", required_argument, 0, 'f'}, */
-        {0, 0, 0, 0}};
+        //{0, 0, 0, 0}
+    };
 
     /* getopt_long stores the option index here. */
     int option_index = 0;
 
-    c = getopt_long(argc, argv, "abc:d:f:", long_options, &option_index);
+    // The ":" follows if argument is required
+    c = getopt_long(argc, argv, "hr", long_options, &option_index);
 
     /* Detect the end of the options. */
     if (c == -1)
@@ -118,28 +155,16 @@ int main(int argc, char *argv[]) {
       printf("\n");
       break;
 
-      /* case 'a': */
-      /*   puts("option -a\n"); */
-      /*   break; */
-
-      /* case 'b': */
-      /*   puts("option -b\n"); */
-      /*   break; */
-
-      /* case 'c': */
-      /*   printf("option -c with value `%s'\n", optarg); */
-      /*   break; */
-
-      /* case 'd': */
-      /*   printf("option -d with value `%s'\n", optarg); */
-      /*   break; */
-
-      /* case 'f': */
-      /*   printf("option -f with value `%s'\n", optarg); */
-      /*   break; */
-
-    case 'b':
-      puts("option -b\n");
+    case 'd':
+      print_devices();
+      break; // NOTE this won't be reached
+    case 'h':
+      help();
+      break; // NOTE this won't be reached
+    case 'r':
+      break;
+    case 'a':
+      printf("option -a with value `%s'\n", optarg);
       break;
 
     case '?':
@@ -147,7 +172,7 @@ int main(int argc, char *argv[]) {
       break;
 
     default:
-      abort();
+      help();
     }
   }
 
@@ -156,91 +181,33 @@ int main(int argc, char *argv[]) {
      we report the final status resulting from them. */
   if (verbose_flag)
     puts("verbose flag is set");
-
-  /* Print any remaining command line arguments (not options). */
-  // if (optind < argc) {
-  // printf("non-option ARGV-elements: ");
-  // while (optind < argc)
-  // printf("%s ", argv[optind++]);
-  // putchar('\n');
-  //}
+  if (help_flag)
+    full_help();
 
   // Setting to sentinel values
   char *device = NULL;
   int brightness = -1;
 
-  for (int index = optind; index < argc; index++) {
-    if (index == 1)
-      device = argv[1];
-    if (index == 2)
-      brightness = atoi(argv[2]);
+  // Here i is the i'th argv for the non-option arguments i.e. mandatory args
+  // j is used to reference the j'th iteration, so we can
+  // ensure arguments are always at the same j. (the mandatory arguments are
+  // only defined by position)
+  for (int i = optind, j = 0; i < argc; i++, j++) {
+    if (j == 0)
+      device = argv[i];
+    if (j == 1)
+      brightness = atoi(argv[i]);
   }
 
-  if (device == NULL || brightness > 100 || brightness < 1)
-    exit(1);
-
-  /* // GETOPTS LOOP */
-  /* int aflag = 0; */
-  /* int bflag = 0; */
-  /* char *cvalue = NULL; */
-  /* int index; */
-  /* int c; */
-
-  /* opterr = 0; */
-  /* // This is shamelessly stolen from some internet site */
-  /* opterr = 0; */
-
-  /* while ((c = getopt(argc, argv, "abc:")) != -1) */
-  /*   switch (c) { */
-  /*   case 'a': */
-  /*     aflag = 1; */
-  /*     break; */
-  /*   case 'b': */
-  /*     bflag = 1; */
-  /*     break; */
-  /*   case 'c': */
-  /*     cvalue = optarg; */
-  /*     break; */
-  /*   case '?': */
-  /*     if (optopt == 'c') */
-  /*       fprintf(stderr, "Option -%c requires an argument.\n", optopt); */
-  /*     else if (isprint(optopt)) */
-  /*       fprintf(stderr, "Unknown option `-%c'.\n", optopt); */
-  /*     else */
-  /*       fprintf(stderr, "Unknown option character `\\x%x'.\n", optopt); */
-  /*     return 1; */
-  /*   default: */
-  /*     abort(); */
-  /*   } */
-
-  /* printf("aflag = %d, bflag = %d, cvalue = %s\n", aflag, bflag, cvalue); */
-
-  /* for (index = optind; index < argc; index++) { */
-  /*   if (index == 1) */
-  /*     device = argv[1]; */
-  /*   if (index == 2) */
-  /*     brightness = atoi(argv[2]); */
-  /*   /\* printf("Non-option argument %s\n", argv[index]); *\/ */
-  /* } */
-  /* return 0; */
-
-  // CHECK INPUT
-  //
-  /* if (argc == 2) */
-  /*   if ((!(strcmp(argv[1], "--help"))) || (!(strcmp(argv[1], "help"))) || */
-  /*       (!(strcmp(argv[1], "-h")))) */
-  /*     help(); */
-  /* if (argc != 3) */
-  /*   argerr(ARG_ERR, argv[0], "not enough arguments", "try running help"); */
-  /* else if (atoi(argv[2]) == 0 || atoi(argv[2]) > 100) */
-  /*   argerr(ARG_ERR, argv[0], "invalid brightness [1-100]", argv[2]); */
+  if (NULL == device || 100 < brightness || 1 > brightness)
+    help();
 
   // TRY TO GET DEVICE
   struct device *dev = get_device_by_id(device);
+
   if (dev == NULL) {
     fprintf(stderr, "Device \"%s\" not found\nValid devices:", device);
-    print_devices();
-    return 1;
+    exit(EXIT_FAILURE);
   }
 
   // READ MAX BRIGHTNESS

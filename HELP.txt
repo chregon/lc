@@ -1,0 +1,7 @@
+Mandatory arguments to long options are mandatory for short options too.
+  -d, --list-devices List the available devices in /sys/class/backlight
+  -h, --help         Show help (-h will only give usage)
+  -r                 Adjust relative to the current value
+
+      --verbose      NOT IMPLEMENTED\n"
+      --brief        NOT IMPLEMENTED\n");
