@@ -1,3 +1,4 @@
+
 CC=gcc
 CFLAGS=-Og -g -march=native -std=c11 -Wall -Wno-stringop-truncation -I.
 LIBS = lclib.h
