@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
     int option_index = 0;
 
     // The ":" follows if argument is required
-    c = getopt_long(argc, argv, "hr", long_options, &option_index);
+    c = getopt_long(argc, argv, "hrd", long_options, &option_index);
 
     /* Detect the end of the options. */
     if (c == -1)
@@ -212,12 +212,26 @@ int main(int argc, char *argv[]) {
 
   // READ MAX BRIGHTNESS
   int m_b = get_device_max_brightness(dev);
-  // CALCULATE TARGET BRIGHTNESS AS % OF MAX
-  // NB: If brightness isn't an int, this turns off the screen
-  //     Since this is the provided code, it must be as the author intended
-  //     Git blame == chregon2001
-  //     Yup jeg kalder dig ud b 😘
-  int target = brightness * (m_b / 100);
+  /* CALCULATE TARGET BRIGHTNESS AS % OF MAX */
+  /* NB: If brightness isn't an int, this turns off the screen */
+  /*     Since this is the provided code, it must be as the author intended */
+  /*     Git blame == chregon2001 */
+  /*     Yup jeg kalder dig ud b 😘 */
+  int target;
+  // NOTE this was very quick, i hope it works... Didn't feel like getting up
+  // and making a sanity check on paper
+  // https://math.stackexchange.com/questions/914823/shift-numbers-into-a-different-range
+  if (relative_flag)
+    target = brightness + (m_b / 100);
+  else
+    target = brightness * (m_b / 100);
+
+  // Needed for relative adjustment... for now, i didn't bother to clamp it
+  //
+  if (target > 100)
+    target = 100;
+  else if (target < 1)
+    target = 1;
 
   set_device_brightness(dev, target);
   free_device(dev);
