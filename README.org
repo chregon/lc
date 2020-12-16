@@ -1,7 +1,7 @@
 * LC - Light Command
 Light command is a small c program that adjusts the brightness of monitors.
 At the moment, only built-in monitors function i.e. most laptop monitors.
-Why make suck a tiny program? There was a vacuum between gui application and
+Why make such a tiny program? There was a vacuum between gui application and
 shell scripts. The author did not particularly enjoy xbacklight
 (specially it's dependence on a xconfig file for the monitor in some cases,
 and the syntax is just stupid... -set?).
