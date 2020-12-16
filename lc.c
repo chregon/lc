@@ -23,6 +23,7 @@
 #include <errno.h>  // for errno, strerror
 #include <getopt.h> // to get command line arguments with getopts
 #include <linux/limits.h>
+#include <math.h>   // for common log, to convert to order of magnitude
 #include <stdio.h>  // for printf, etc...
 #include <stdlib.h> // for EXIT_FAILURE, EXIT_SUCCESS, etc...
 #include <string.h> // for strcat, strcpy
@@ -33,8 +34,8 @@ static int verbose_flag;
 // if set, instead of setting brighness, changes will be relative.
 static int relative_flag;
 
-// tiny help, or just usage string
-static int tiny_help_flag;
+/* // tiny help, or just usage string */
+/* static int tiny_help_flag; */
 
 // full help flag
 static int help_flag;
@@ -110,6 +111,34 @@ void argerr(char *err, char *argv0, char *errmsg, char *more) {
   exit(EXIT_FAILURE);
 }
 
+// "self-documenting" (i don't bother right now this took ages) FIXME
+int getsize(char *s) {
+  char *t;
+  for (t = s; *t != '\0'; t++) {
+  }
+  return t - s;
+}
+// "self-documenting" (i don't bother right now this took ages) FIXME
+// Basically, it's a hack to get proper negative numbers with
+// optparse_long... some guy on a perl forum flamed about how
+// this was very bad because standards etc... but if POSIX can't even negative
+// integers, then i cannot POSIX
+int steal_minus(char *optarg, int prefix) {
+  int s = getsize(optarg);
+  int res = prefix;
+  for (int i = 0; i < getsize(optarg); i++) {
+    char t = optarg[i];
+    double d = atoi(&t);
+    double di = i;
+    printf("%f pow: %f\n", pow(10, di), 1 / pow(10, di));
+    res += d * (1 / pow(10, di + 1));
+  }
+  return res;
+}
+
+// For -0..-9 args
+double neg_num_arg_prefix = -1000;
+
 int main(int argc, char *argv[]) {
   // GET ARGS
   // Taken from getopts info pages, getopts_long examples
@@ -124,9 +153,20 @@ int main(int argc, char *argv[]) {
         {"help", no_argument, &help_flag, 1},
         /* These options don’t set a flag.
            We distinguish them by their indices. */
-        {"relative", no_argument, &relative_flag, 'r'},
-        {"tiny help", no_argument, &tiny_help_flag, 'h'},
+        {"relative", no_argument, 0, 'r'},
+        {"tiny help", no_argument, 0, 'h'},
         {"list devices", no_argument, &list_devices_flag, 'd'},
+        // this should be easy, he said
+        {"nums", required_argument, 0, '1'},
+        {"nums", required_argument, 0, '2'},
+        {"nums", required_argument, 0, '3'},
+        {"nums", required_argument, 0, '4'},
+        {"nums", required_argument, 0, '5'},
+        {"nums", required_argument, 0, '6'},
+        {"nums", required_argument, 0, '7'},
+        {"nums", required_argument, 0, '8'},
+        {"nums", required_argument, 0, '9'},
+        {"nums", required_argument, 0, '0'},
         /* {"append", no_argument, 0, 'b'}, */
         /* {"delete", required_argument, 0, 'd'}, */
         /* {"create", required_argument, 0, 'c'}, */
@@ -138,7 +178,8 @@ int main(int argc, char *argv[]) {
     int option_index = 0;
 
     // The ":" follows if argument is required
-    c = getopt_long(argc, argv, "hrd", long_options, &option_index);
+    c = getopt_long(argc, argv, "1:2:3:4:5:6:7:8:9:0:hrd", long_options,
+                    &option_index);
 
     /* Detect the end of the options. */
     if (c == -1)
@@ -155,6 +196,45 @@ int main(int argc, char *argv[]) {
       printf("\n");
       break;
 
+    case '1':
+      neg_num_arg_prefix = 1;
+      int s = getsize(optarg);
+      for (int i = 0; i < getsize(optarg); i++) {
+        char t = optarg[i];
+        double d = atoi(&t);
+        double di = i;
+        printf("%f pow: %f\n", pow(10, di), 1 / pow(10, di));
+        neg_num_arg_prefix += d * (1 / pow(10, di + 1));
+      }
+      printf("%f\n", neg_num_arg_prefix * pow(10, s));
+      break; // NOTE this won't be reached
+    case '2':
+      neg_num_arg_prefix = 2;
+      break; // NOTE this won't be reached
+    case '3':
+      neg_num_arg_prefix = 3;
+      break; // NOTE this won't be reached
+    case '4':
+      neg_num_arg_prefix = 4;
+      break; // NOTE this won't be reached
+    case '5':
+      neg_num_arg_prefix = 5;
+      break; // NOTE this won't be reached
+    case '6':
+      neg_num_arg_prefix = 6;
+      break; // NOTE this won't be reached
+    case '7':
+      neg_num_arg_prefix = 7;
+      break; // NOTE this won't be reached
+    case '8':
+      neg_num_arg_prefix = 8;
+      break; // NOTE this won't be reached
+    case '9':
+      neg_num_arg_prefix = 9;
+      break; // NOTE this won't be reached
+    case '0':
+      neg_num_arg_prefix = 0; // well be complete but why would one use 0?
+      break;                  // NOTE this won't be reached
     case 'd':
       print_devices();
       break; // NOTE this won't be reached
@@ -162,6 +242,7 @@ int main(int argc, char *argv[]) {
       help();
       break; // NOTE this won't be reached
     case 'r':
+      relative_flag = 1;
       break;
     case 'a':
       printf("option -a with value `%s'\n", optarg);
@@ -186,7 +267,7 @@ int main(int argc, char *argv[]) {
 
   // Setting to sentinel values
   char *device = NULL;
-  int brightness = -1;
+  double brightness = -1;
 
   // Here i is the i'th argv for the non-option arguments i.e. mandatory args
   // j is used to reference the j'th iteration, so we can
@@ -211,31 +292,33 @@ int main(int argc, char *argv[]) {
   }
 
   // READ MAX BRIGHTNESS
-  int m_b = get_device_max_brightness(dev);
-  /* CALCULATE TARGET BRIGHTNESS AS % OF MAX */
-  /* NB: If brightness isn't an int, this turns off the screen */
-  /*     Since this is the provided code, it must be as the author intended */
-  /*     Git blame == chregon2001 */
-  /*     Yup jeg kalder dig ud b 😘 */
-  int target;
+  double m_b = get_device_max_brightness(dev);
+  double c_b = get_device_brightness(dev);
+
+  double target;
   // NOTE this was very quick, i hope it works... Didn't feel like getting up
   // and making a sanity check on paper
-  // https://math.stackexchange.com/questions/914823/shift-numbers-into-a-different-range
-  if (relative_flag)
-    target = brightness + (m_b / 100);
-  else
+  printf("%f\n", relative_flag);
+  printf("%f\n", m_b);
+  if (relative_flag) {
+    printf("%d\n", relative_flag);
+    target = c_b + (m_b / 100) * brightness;
+    // (m_b/100) in R+, specific (0,m_b]
+    // brightness in [-100,100]
+    // target in (-100, m_b + 100]
+    // so we let f: (-100, m_b + 100] -> (0,m_b)
+    // https://math.stackexchange.com/questions/914823/shift-numbers-into-a-different-range
+    // f: [a,b] -> [c,d]
+    // f(t)=c+((d−c)/(b−a))(t−a)
+    // target = 1 + ((m_b - 1) / (100 + 100)) * (target + 100);
+  } else
     target = brightness * (m_b / 100);
 
-  // Needed for relative adjustment... for now, i didn't bother to clamp it
-  //
-  if (target > 100)
-    target = 100;
-  else if (target < 1)
-    target = 1;
+  printf("%f", target);
 
-  set_device_brightness(dev, target);
+  // set_device_brightness(dev, target);
   free_device(dev);
 
   return EXIT_SUCCESS;
 }
-// vim: expandtab:ts=2:sw=2
+// vim: expandtab:ts=2;:sw=2

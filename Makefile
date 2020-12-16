@@ -1,6 +1,6 @@
 
 CC=gcc
-CFLAGS=-Og -g -march=native -std=c11 -Wall -Wno-stringop-truncation -I.
+CFLAGS=-Og -g -march=native -std=c11 -Wall -Wno-stringop-truncation -I. -lm
 LIBS = lclib.h
 OBJS = lc.o lclib.o
 MAIN = lc.c
